@@ -1,4 +1,4 @@
-#include "UnrealReadPropertyAccesser.h"
+#include "ReadPropertyAccesser.h"
 #include "MyObject.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructBooleanTest, "PropertyAccess.StructBooleanTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
