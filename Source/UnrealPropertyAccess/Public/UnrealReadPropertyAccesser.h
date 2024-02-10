@@ -9,21 +9,20 @@
 
 namespace UE
 {
-
-	template<class ... Args>
-	struct TLastType;
-
-	template<class T>
-	struct TLastType<T>
+	namespace Details
 	{
-		using Type = T;
-	};
+		template<size_t I, class ... T>
+		struct IndexOfType : public IndexOfType<I - 1, T...> {};
 
-	template<class T, class Ty, class ... Tz>
-	struct TLastType<T, Ty, Tz...>
-		: public TLastType<Ty, Tz...>
-	{
-	};
+		template<>
+		struct IndexOfType<0> {};
+
+		template<class T, class ... Ty>
+		struct IndexOfType<0, T, Ty...>
+		{
+			using Type = T;
+		};
+	}
 
 	template<class T>
 	struct TReadUnrealPropertyAccesser;
@@ -49,7 +48,7 @@ namespace UE
 	{
 	private:
 
-		using TargetPropertyType = typename TLastType<T, Tx...>::Type;
+		using TargetPropertyType = typename Details::IndexOfType<sizeof...(Tx) + 1, T, Tx...>::Type;
 
 		static constexpr size_t ReadPrpertyNum = sizeof...(Tx) + 1;
 
@@ -75,10 +74,11 @@ namespace UE
 			}
 		}
 
-
 		template<size_t I, class Pred, class ErrorPred>
 		void ExecuteImpl(Pred InPred, ErrorPred InErrorPred, void* KeyPtr, UStruct* KeyStruct, void* ValuePtr, UStruct* ValueStruct, std::false_type)
 		{
+			using Type = typename Details::IndexOfType<I, T, Tx...>::Type;
+
 			const FName& PropertyName = TopParam->PropertyNames[I];
 			FProperty* Property = FindFProperty<FProperty>(ValueStruct, PropertyName);
 
@@ -107,12 +107,21 @@ namespace UE
 
 				return;
 			}
-			if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+			if constexpr (std::is_base_of_v<UObject, Type>)
 			{
-				void* NewValue = Property->ContainerPtrToValuePtr<void>(ValuePtr);
-				ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, ObjectProperty->PropertyClass, NextConditionType());
+				if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+				{
+					void* NewValue = Property->ContainerPtrToValuePtr<void>(ValuePtr);
+					ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, ObjectProperty->PropertyClass, NextConditionType());
+					return;
+				}
+				// Propertyが見つからないのでエラー
+				if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+				{
+					InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
+				}
 			}
-			else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+			if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 			{
 				void* NewValue = Property->ContainerPtrToValuePtr<void>(ValuePtr);
 				ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, StructProperty->Struct, NextConditionType());
@@ -154,9 +163,9 @@ namespace UE
 
 				for (int32 Index = 0; Index < MapHelper.Num(); ++Index)
 				{
-					void* KeyPtr = MapHelper.GetKeyPtr(Index);
-					void* ValuePtr = MapHelper.GetValuePtr(Index);
-					ExecuteImpl<I + 1>(InPred, InErrorPred, KeyPtr, MapKeyStruct, ValuePtr, MapValueStruct, NextConditionType());
+					void* MapKeyPtr = MapHelper.GetKeyPtr(Index);
+					void* MapValuePtr = MapHelper.GetValuePtr(Index);
+					ExecuteImpl<I + 1>(InPred, InErrorPred, MapKeyPtr, MapKeyStruct, MapValuePtr, MapValueStruct, NextConditionType());
 				}
 			}
 			else
@@ -238,7 +247,7 @@ namespace UE
 	{
 		UStruct* ValueStruct = nullptr;
 		if constexpr (std::is_base_of_v<UObject, ValueType>)
-		{
+		{  
 			ValueStruct = ValueType::StaticClass();
 		}
 		else
