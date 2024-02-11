@@ -6,18 +6,19 @@ UE_DISABLE_OPTIMIZATION
 namespace
 {
 	template<class T>
-	T RandRange()
+	T RandValue()
 	{
-		return (T)FMath::RandRange(TNumericLimits<T>::Min(), TNumericLimits<T>::Max());
+		return static_cast<T>(FMath::FRand());
 	}
-
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructBooleanTest, "PropertyAccess.StructBooleanTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructPrimitiveTest, "PropertyAccess.StructPrimitiveTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool FUnrealPropertyAccessStructBooleanTest::RunTest(const FString& Parameters)
+bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters)
 {
-	for (uint32 i = 0; i < 10; ++i)
+	constexpr uint32 TestNum = 10;
+	// Booleanテスト
+	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const bool TestDataValue = FMath::RandBool();
 		bool bFailed = true;
@@ -37,17 +38,10 @@ bool FUnrealPropertyAccessStructBooleanTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	return true;
-}
-
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructInt8Test, "PropertyAccess.StructInt8Test", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FUnrealPropertyAccessStructInt8Test::RunTest(const FString& Parameters)
-{
-	for (uint32 i = 0; i < 10; ++i)
+	// int8テスト
+	for (uint32 i = 0; i < TestNum; ++i)
 	{
-		const int8 TestDataValue = RandRange<int8>();
+		const int8 TestDataValue = RandValue<int8>();
 		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Int8Value = TestDataValue;
@@ -64,17 +58,10 @@ bool FUnrealPropertyAccessStructInt8Test::RunTest(const FString& Parameters)
 		}
 	}
 
-	return true;
-}
-
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructInt16Test, "PropertyAccess.StructInt16Test", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FUnrealPropertyAccessStructInt16Test::RunTest(const FString& Parameters)
-{
-	for (uint32 i = 0; i < 10; ++i)
+	// int16テスト
+	for (uint32 i = 0; i < TestNum; ++i)
 	{
-		const int16 TestDataValue = RandRange<int16>();
+		const int16 TestDataValue = RandValue<int16>();
 		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Int16Value = TestDataValue;
@@ -91,17 +78,10 @@ bool FUnrealPropertyAccessStructInt16Test::RunTest(const FString& Parameters)
 		}
 	}
 
-	return true;
-}
-
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructInt32Test, "PropertyAccess.StructInt32Test", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
-
-bool FUnrealPropertyAccessStructInt32Test::RunTest(const FString& Parameters)
-{
-	for (uint32 i = 0; i < 10; ++i)
+	// int32テスト
+	for (uint32 i = 0; i < TestNum; ++i)
 	{
-		const int32 TestDataValue = RandRange<int32>();
+		const int32 TestDataValue = RandValue<int32>();
 		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Int32Value = TestDataValue;
@@ -117,6 +97,108 @@ bool FUnrealPropertyAccessStructInt32Test::RunTest(const FString& Parameters)
 			return false;
 		}
 	}
+
+	// int64テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const int64 TestDataValue = RandValue<int64>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.Int64Value = TestDataValue;
+
+		UE::ReadProperty<int64>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int64Value))
+			.Execute([&](int64 PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+
+	// uint8テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const uint8 TestDataValue = RandValue<uint8>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.Uint8Value = TestDataValue;
+
+		UE::ReadProperty<uint8>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint8Value))
+			.Execute([&](uint8 PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	// uint16テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const uint16 TestDataValue = RandValue<uint16>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.Uint16Value = TestDataValue;
+
+		UE::ReadProperty<uint16>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint16Value))
+			.Execute([&](uint16 PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	// uint32テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const uint32 TestDataValue = RandValue<uint32>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.Uint32Value = TestDataValue;
+
+		UE::ReadProperty<uint32>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint32Value))
+			.Execute([&](uint32 PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	// uint64テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const uint64 TestDataValue = RandValue<uint64>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.Uint64Value = TestDataValue;
+
+		UE::ReadProperty<uint64>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint64Value))
+			.Execute([&](uint64 PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
 
 	return true;
 }
