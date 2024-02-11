@@ -1,27 +1,34 @@
 #include "UnrealReadPropertyAccesser.h"
 #include "MyObject.h"
 
+UE_DISABLE_OPTIMIZATION
+
+namespace
+{
+	template<class T>
+	T RandRange()
+	{
+		return (T)FMath::RandRange(TNumericLimits<T>::Min(), TNumericLimits<T>::Max());
+	}
+
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructBooleanTest, "PropertyAccess.StructBooleanTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FUnrealPropertyAccessStructBooleanTest::RunTest(const FString& Parameters)
 {
-	bool bFailed = false;
-	FMyTestData TestData = {};
-
-	// テストデータ
-	const bool TestDataValues[] = { false, true, false };
-
-	for (bool TestDataValue : TestDataValues)
+	for (uint32 i = 0; i < 10; ++i)
 	{
+		const bool TestDataValue = FMath::RandBool();
+		bool bFailed = true;
+		FMyTestData TestData = {};
 		TestData.BoolValue = TestDataValue;
+		TestData.Inner.Uint64Value = 123454321;
 
 		UE::ReadProperty<bool>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, BoolValue))
 			.Execute([&](bool PropertyValue)
 				{
-					if (PropertyValue != TestDataValue)
-					{
-						bFailed = true;
-					}
+					bFailed = PropertyValue != TestDataValue;
 				});
 
 		if (bFailed)
@@ -38,23 +45,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructInt8Test, "PropertyA
 
 bool FUnrealPropertyAccessStructInt8Test::RunTest(const FString& Parameters)
 {
-	bool bFailed = false;
-	FMyTestData TestData = {};
-
-	// テストデータ
-	const int8 TestDataValues[] = { 124, 21, 11, 23 };
-
-	for (int8 TestDataValue : TestDataValues)
+	for (uint32 i = 0; i < 10; ++i)
 	{
+		const int8 TestDataValue = RandRange<int8>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
 		TestData.Int8Value = TestDataValue;
 
 		UE::ReadProperty<int8>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int8Value))
 			.Execute([&](int8 PropertyValue)
 				{
-					if (PropertyValue != TestDataValue)
-					{
-						bFailed = true;
-					}
+					bFailed = PropertyValue != TestDataValue;
 				});
 
 		if (bFailed)
@@ -71,23 +72,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructInt16Test, "Property
 
 bool FUnrealPropertyAccessStructInt16Test::RunTest(const FString& Parameters)
 {
-	bool bFailed = false;
-	FMyTestData TestData = {};
-
-	// テストデータ
-	const int16 TestDataValues[] = { 124, 21, 11, 23 };
-
-	for (int16 TestDataValue : TestDataValues)
+	for (uint32 i = 0; i < 10; ++i)
 	{
+		const int16 TestDataValue = RandRange<int16>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
 		TestData.Int16Value = TestDataValue;
 
 		UE::ReadProperty<int16>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int16Value))
 			.Execute([&](int16 PropertyValue)
 				{
-					if (PropertyValue != TestDataValue)
-					{
-						bFailed = true;
-					}
+					bFailed = PropertyValue != TestDataValue;
 				});
 
 		if (bFailed)
@@ -104,23 +99,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructInt32Test, "Property
 
 bool FUnrealPropertyAccessStructInt32Test::RunTest(const FString& Parameters)
 {
-	bool bFailed = false;
-	FMyTestData TestData = {};
-
-	// テストデータ
-	const int32 TestDataValues[] = { 3221, 5322, 2315, 797 };
-
-	for (int32 TestDataValue : TestDataValues)
+	for (uint32 i = 0; i < 10; ++i)
 	{
+		const int32 TestDataValue = RandRange<int32>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
 		TestData.Int32Value = TestDataValue;
 
 		UE::ReadProperty<int32>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int32Value))
 			.Execute([&](int32 PropertyValue)
 				{
-					if (PropertyValue != TestDataValue)
-					{
-						bFailed = true;
-					}
+					bFailed = PropertyValue != TestDataValue;
 				});
 
 		if (bFailed)
@@ -131,3 +120,5 @@ bool FUnrealPropertyAccessStructInt32Test::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+UE_ENABLE_OPTIMIZATION
