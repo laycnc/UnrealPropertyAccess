@@ -199,6 +199,48 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 		}
 	}
 
+	// Objectテスト
+	{
+		bool bFailed = true;
+		FMyTestData TestData = {};
+
+		UE::ReadProperty<TObjectPtr<UTestObject>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
+			.Execute([&](TObjectPtr<UTestObject> PropertyValue)
+				{
+					bFailed = false;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructErrorTest, "PropertyAccess.ErrorCheck", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)
+{
+	// Struct型テスト
+	// 別の型にチェックする
+	{
+		bool bFailed = true;
+		FMyTestData TestData = {};
+
+		UE::ReadProperty<FMyTestData>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Inner))
+			.Execute([](const FMyTestData&) {},
+				[&](const FString& Error)
+				{
+					bFailed = false;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
 
 	return true;
 }

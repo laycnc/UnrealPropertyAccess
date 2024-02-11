@@ -6,6 +6,19 @@
 #include "UObject/NoExportTypes.h"
 #include "MyObject.generated.h"
 
+UCLASS()
+class UTestObject : public UObject
+{
+	GENERATED_BODY()
+};
+
+
+UCLASS()
+class UTest2Object : public UTestObject
+{
+	GENERATED_BODY()
+};
+
 
 USTRUCT()
 struct FMyTestDataInner
@@ -76,6 +89,11 @@ public:
 	UPROPERTY()
 	uint64 Uint64Value = 0;
 
+	UPROPERTY()
+	TObjectPtr<UTestObject> Test1 = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UTest2Object> Test2 = nullptr;
 
 	UPROPERTY()
 	FMyTestDataInner Inner;
