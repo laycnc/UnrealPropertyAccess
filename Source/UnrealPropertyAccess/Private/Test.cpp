@@ -203,12 +203,15 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 	{
 		bool bFailed = true;
 		FMyTestData TestData = {};
+		TestData.Test1 = NewObject<UTestObject>();
 
 		UE::ReadProperty<TObjectPtr<UTestObject>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
 			.Execute([&](TObjectPtr<UTestObject> PropertyValue)
 				{
-					bFailed = false;
+					bFailed = TestData.Test1 != PropertyValue;
 				});
+
+		TestData.Test1->MarkAsGarbage();
 
 		if (bFailed)
 		{
@@ -231,6 +234,25 @@ bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)
 
 		UE::ReadProperty<FMyTestData>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Inner))
 			.Execute([](const FMyTestData&) {},
+				[&](const FString& Error)
+				{
+					bFailed = false;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	// Object型テスト
+	// 別の型にチェックする
+	{
+		bool bFailed = true;
+		FMyTestData TestData = {};
+
+		UE::ReadProperty<TObjectPtr<AActor>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
+			.Execute([](const TObjectPtr<AActor>&) {},
 				[&](const FString& Error)
 				{
 					bFailed = false;

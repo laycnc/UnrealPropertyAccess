@@ -24,13 +24,50 @@ namespace UE
 		};
 	}
 
+	template <typename T>
+	struct TIsUnrealStructImpl
+	{
+		template <typename U>
+		static std::true_type Test(decltype(&U::StaticStruct));
+
+		template <typename U>
+		static std::false_type Test(...);
+
+		static constexpr bool Value = decltype(Test<T>(nullptr))::value;
+	};
+
+	template <typename T>
+	constexpr bool TIsUnrealStruct = TIsUnrealStructImpl<T>::Value;
+
+
+	template <typename T>
+	struct TIsObjectPtr
+	{
+		static constexpr bool Value = false;
+	};
+
+	template <typename T>
+	struct TIsObjectPtr<TObjectPtr<T>>
+	{
+		static constexpr bool Value = true;
+	};
+
+	template <typename T>
+	struct TRemoveObjectPtr {};
+
+	template <typename T>
+	struct TRemoveObjectPtr<TObjectPtr<T>>
+	{
+		using Type = T;
+	};
+
 	template<class T>
-	struct TReadUnrealPropertyAccesser;
+	struct TReadPropertyAccesser;
 
 	template<class Pred, class T>
 	struct TDataAccessorInvokeable
 	{
-		static constexpr bool Value = std::is_invocable_v<Pred, T>;
+		static constexpr bool Value = std::is_invocable_v<Pred, T&>;
 	};
 
 	template<class Pred, class KeyType, class ValueType>
@@ -107,11 +144,21 @@ namespace UE
 
 				return;
 			}
-			if constexpr (std::is_base_of_v<UObject, Type>)
+			if constexpr (TIsObjectPtr<Type>::Value)
 			{
 				if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
 				{
-					void* NewValue = Property->ContainerPtrToValuePtr<void>(ValuePtr);
+					UClass* TargetClass = typename TRemoveObjectPtr<Type>::Type::StaticClass();
+					if (TargetClass != ObjectProperty->PropertyClass)
+					{
+						if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+						{
+							// エラーハンドリング関数が指定されている場合にはコールバックを出す
+							InErrorPred(FString::Printf(TEXT("指定されている[%d]型(%s) != %s"), I, *ObjectProperty->PropertyClass->GetName(), *TargetClass->GetName()));
+						}
+						return;
+					}
+					void* NewValue = ObjectProperty->ContainerPtrToValuePtr<void>(ValuePtr);
 					ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, ObjectProperty->PropertyClass, NextConditionType());
 					return;
 				}
@@ -121,12 +168,30 @@ namespace UE
 					InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
 				}
 			}
-			if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+			if constexpr (TIsUnrealStruct<Type>)
 			{
-				void* NewValue = Property->ContainerPtrToValuePtr<void>(ValuePtr);
-				ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, StructProperty->Struct, NextConditionType());
+				if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+				{
+					UStruct* TargetStruct = Type::StaticStruct();
+					if (TargetStruct != StructProperty->Struct)
+					{
+						if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+						{
+							// エラーハンドリング関数が指定されている場合にはコールバックを出す
+							InErrorPred(FString::Printf(TEXT("指定されている[%d]型(%s) != %s"), I, *StructProperty->Struct->GetName(), *TargetStruct->GetName()));
+						}
+						return;
+					}
+					void* NewValue = Property->ContainerPtrToValuePtr<void>(ValuePtr);
+					ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, StructProperty->Struct, NextConditionType());
+				}
+				// Propertyが見つからないのでエラー
+				if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+				{
+					InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
+				}
 			}
-			else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+			if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
 			{
 				UStruct* ArrayValueStruct = GetPropertyClass(ArrayProperty->Inner);
 				void* NewValue = ArrayProperty->ContainerPtrToValuePtr<void>(ValuePtr);
@@ -176,7 +241,7 @@ namespace UE
 		}
 	public:
 
-		TDataAccessorImpl(TReadUnrealPropertyAccesser<T>* InTopParam)
+		TDataAccessorImpl(TReadPropertyAccesser<T>* InTopParam)
 			: TopParam(InTopParam)
 		{
 		}
@@ -221,14 +286,14 @@ namespace UE
 		}
 
 	protected:
-		TReadUnrealPropertyAccesser<T>* TopParam = nullptr;
+		TReadPropertyAccesser<T>* TopParam = nullptr;
 	};
 
 	template<class T>
-	struct TReadUnrealPropertyAccesser
+	struct TReadPropertyAccesser
 		: public TDataAccessorImpl<T>
 	{
-		TReadUnrealPropertyAccesser(void* InValuePtr, UStruct* InValueClass, FName InPropertyName)
+		TReadPropertyAccesser(void* InValuePtr, UStruct* InValueClass, FName InPropertyName)
 			: TDataAccessorImpl<T>(this)
 			, DataPtr(InValuePtr)
 			, TopDataClass(InValueClass)
@@ -243,18 +308,18 @@ namespace UE
 	};
 
 	template<class Ty, class ValueType>
-	TReadUnrealPropertyAccesser<Ty> ReadProperty(ValueType* InValuePtr, FName InPropertyName)
+	TReadPropertyAccesser<Ty> ReadProperty(ValueType* InValuePtr, FName InPropertyName)
 	{
 		UStruct* ValueStruct = nullptr;
 		if constexpr (std::is_base_of_v<UObject, ValueType>)
-		{  
+		{
 			ValueStruct = ValueType::StaticClass();
 		}
 		else
 		{
 			ValueStruct = ValueType::StaticStruct();
 		}
-		auto Accesser = TReadUnrealPropertyAccesser<Ty>(InValuePtr, ValueStruct, InPropertyName);
+		auto Accesser = TReadPropertyAccesser<Ty>(InValuePtr, ValueStruct, InPropertyName);
 		return Accesser;
 	}
 }
