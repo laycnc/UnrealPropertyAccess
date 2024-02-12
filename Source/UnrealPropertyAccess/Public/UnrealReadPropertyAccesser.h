@@ -12,16 +12,19 @@ namespace UE
 	namespace ReadPropertyHelper
 	{
 		template<size_t I, class ... T>
-		struct IndexOfType : public IndexOfType<I - 1, T...> {};
+		struct IndexOfTypeImpl : public IndexOfTypeImpl<I - 1, T...> {};
 
 		template<>
-		struct IndexOfType<0> {};
+		struct IndexOfTypeImpl<0> {};
 
 		template<class T, class ... Ty>
-		struct IndexOfType<0, T, Ty...>
+		struct IndexOfTypeImpl<0, T, Ty...>
 		{
 			using Type = T;
 		};
+
+		template<size_t I, class ... T>
+		using IndexOfType = typename IndexOfTypeImpl<I, T...>::Type;
 
 		template <typename T>
 		struct TIsUnrealStructImpl
@@ -37,28 +40,6 @@ namespace UE
 
 		template <typename T>
 		constexpr bool TIsUnrealStruct = TIsUnrealStructImpl<T>::Value;
-
-
-		template <typename T>
-		struct TIsObjectPtr
-		{
-			static constexpr bool Value = false;
-		};
-
-		template <typename T>
-		struct TIsObjectPtr<TObjectPtr<T>>
-		{
-			static constexpr bool Value = true;
-		};
-
-		template <typename T>
-		struct TRemoveObjectPtr {};
-
-		template <typename T>
-		struct TRemoveObjectPtr<TObjectPtr<T>>
-		{
-			using Type = T;
-		};
 
 		template<class T>
 		struct TReadPropertyAccesser;
@@ -83,7 +64,7 @@ namespace UE
 		class TDataAccessorImpl
 		{
 		private:
-			using TargetPropertyType = typename IndexOfType<sizeof...(Tx) + 1, T, Tx...>::Type;
+			using TargetPropertyType = IndexOfType<sizeof...(Tx) + 1, T, Tx...>;
 
 			static constexpr size_t ReadPrpertyNum = sizeof...(Tx) + 1;
 
@@ -112,7 +93,7 @@ namespace UE
 			template<size_t I, class Pred, class ErrorPred>
 			void ExecuteImpl(Pred InPred, ErrorPred InErrorPred, void* KeyPtr, UStruct* KeyStruct, void* ValuePtr, UStruct* ValueStruct, std::false_type)
 			{
-				using Type = typename IndexOfType<I, T, Tx...>::Type;
+				using Type = IndexOfType<I, T, Tx...>;
 
 				const FName& PropertyName = TopParam->PropertyNames[I];
 				FProperty* Property = FindFProperty<FProperty>(ValueStruct, PropertyName);
@@ -142,11 +123,11 @@ namespace UE
 
 					return;
 				}
-				if constexpr (TIsObjectPtr<Type>::Value)
+				if constexpr (TIsPointerOrObjectPtrToBaseOf<Type, UObject>::Value)
 				{
 					if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
 					{
-						UClass* TargetClass = typename TRemoveObjectPtr<Type>::Type::StaticClass();
+						UClass* TargetClass = TPointedToType<Type>::StaticClass();
 						if (TargetClass != ObjectProperty->PropertyClass)
 						{
 							if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
@@ -311,7 +292,7 @@ namespace UE
 	ReadPropertyHelper::TReadPropertyAccesser<Ty> ReadProperty(ValueType* InValuePtr, FName InPropertyName)
 	{
 		UStruct* ValueStruct = nullptr;
-		if constexpr (std::is_base_of_v<UObject, ValueType>)
+		if constexpr (TIsPointerOrObjectPtrToBaseOf<ValueType, UObject>::Value)
 		{
 			ValueStruct = ValueType::StaticClass();
 		}
