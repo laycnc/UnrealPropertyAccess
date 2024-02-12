@@ -267,6 +267,57 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 	return true;
 }
 
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructHierarchyTest, "PropertyAccess.HierarchyTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FUnrealPropertyAccessStructHierarchyTest::RunTest(const FString& Parameters)
+{	
+	// 階層テスト
+	{
+		bool bFailed = true;
+		UMyObject* TestData = NewObject<UMyObject>();
+		const int32 TestDataValue = RandValue<int32>();
+		TestData->TestData.Inner.Int32Value = TestDataValue;
+
+		UE::ReadProperty<FMyTestData>(TestData, GET_MEMBER_NAME_CHECKED(UMyObject, TestData))
+		.ReadProperty<FMyTestDataInner>(GET_MEMBER_NAME_CHECKED(FMyTestData, Inner))
+		.ReadProperty<int32>(GET_MEMBER_NAME_CHECKED(FMyTestDataInner, Int32Value))
+			.Execute([&](int32 PropertyValue)
+			{
+				bFailed = PropertyValue != TestDataValue;
+			});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	{
+		const FString TestDataValue = TEXT("###ABC###");
+		bool bFailed = true;
+		UMyObject* TestData = NewObject<UMyObject>();
+		TestData->TestData.Test2 = NewObject<UTest2Object>();
+		TestData->TestData.Test2->StrValue = TEXT("###ABC###");
+
+		UE::ReadProperty<FMyTestData>(TestData, GET_MEMBER_NAME_CHECKED(UMyObject, TestData))
+			.ReadProperty<TObjectPtr<UTest2Object>>(GET_MEMBER_NAME_CHECKED(FMyTestData, Test2))
+			.ReadProperty<FString>(GET_MEMBER_NAME_CHECKED(UTest2Object, StrValue))
+			.Execute([&](FString PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructErrorTest, "PropertyAccess.ErrorCheck", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)

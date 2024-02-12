@@ -12,7 +12,10 @@ namespace UE
 	namespace ReadPropertyHelper
 	{
 		template<size_t I, class ... T>
-		struct IndexOfTypeImpl : public IndexOfTypeImpl<I - 1, T...> {};
+		struct IndexOfTypeImpl;
+
+		template<size_t I, class T, class ... Ty>
+		struct IndexOfTypeImpl<I, T, Ty...> : public IndexOfTypeImpl<I - 1, Ty...> {};
 
 		template<>
 		struct IndexOfTypeImpl<0> {};
@@ -63,18 +66,18 @@ namespace UE
 		template<class T, class ...Tx>
 		class TDataAccessorImpl
 		{
-		private:
-			using TargetPropertyType = IndexOfType<sizeof...(Tx) + 1, T, Tx...>;
+		public:
+			using TargetPropertyType = IndexOfType<sizeof...(Tx), T, Tx...>;
 
 			static constexpr size_t ReadPrpertyNum = sizeof...(Tx) + 1;
 
-
+		private:
 			template<class Pred, class ErrorPred>
 			void ExecuteImpl(Pred& InPred, ErrorPred& InError, TObjectPtr<UObject>* InObject)
 			{
 				// 関数を分割しないと何故かエラーが出る為
 				// しょうがなく分離コンパイルエラーになる理由は分からない
-				if(InObject)
+				if (InObject)
 				{
 					using ObjectType = TPointedToType<TargetPropertyType>;
 					TObjectPtr<UObject>& Object = *InObject;
@@ -111,10 +114,18 @@ namespace UE
 				}
 			}
 
-			template<size_t I, class Pred, class ErrorPred>
-			void ExecuteImpl(Pred InPred, ErrorPred InErrorPred, void* KeyPtr, UStruct* KeyStruct, void* ValuePtr, UStruct* ValueStruct, std::false_type)
+			template<size_t I, class Pred, class ErrorPred, class ValueType>
+			void ExecuteImpl(Pred InPred, ErrorPred InErrorPred, void* KeyPtr, UStruct* KeyStruct, ValueType* InValuePtr, UStruct* ValueStruct, std::false_type)
 			{
 				using Type = IndexOfType<I, T, Tx...>;
+
+				void* ValuePtr = InValuePtr;
+				if constexpr (std::is_same_v<ValueType, TObjectPtr<UObject>>)
+				{
+					// UObjectの場合には生ポインタまで取得する必要があるので特殊化が必要
+					// TObjectPtrのままだと値を取得する事が出来ない
+					ValuePtr = InValuePtr->Get();
+				}
 
 				const FName& PropertyName = TopParam->PropertyNames[I];
 				FProperty* Property = FindFProperty<FProperty>(ValueStruct, PropertyName);
@@ -158,7 +169,7 @@ namespace UE
 							}
 							return;
 						}
-						void* NewValue = ObjectProperty->ContainerPtrToValuePtr<void>(ValuePtr);
+						TObjectPtr<UObject>* NewValue = ObjectProperty->ContainerPtrToValuePtr<TObjectPtr<UObject>>(ValuePtr);
 						ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, ObjectProperty->PropertyClass, NextConditionType());
 						return;
 					}
@@ -313,7 +324,7 @@ namespace UE
 	ReadPropertyHelper::TReadPropertyAccesser<Ty> ReadProperty(ValueType* InValuePtr, FName InPropertyName)
 	{
 		UStruct* ValueStruct = nullptr;
-		if constexpr (TIsPointerOrObjectPtrToBaseOf<ValueType, UObject>::Value)
+		if constexpr (TIsPointerOrObjectPtrToBaseOf<ValueType*, UObject>::Value)
 		{
 			ValueStruct = ValueType::StaticClass();
 		}

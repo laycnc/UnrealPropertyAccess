@@ -17,6 +17,13 @@ UCLASS()
 class UTest2Object : public UTestObject
 {
 	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	bool BoolValue = 0;
+
+	UPROPERTY()
+	FString StrValue = TEXT("ABCD");
 };
 
 
