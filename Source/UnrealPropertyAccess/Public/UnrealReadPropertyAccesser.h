@@ -58,7 +58,7 @@ namespace UE
 
 
 		template<class ErrorPred>
-		constexpr bool TDataAccessorErrorInvokeable = std::is_invocable_v<ErrorPred, const FString&>;
+		constexpr bool TIsErrorInvokeable = std::is_invocable_v<ErrorPred, const FString&>;
 
 		template<class T, class ...Tx>
 		class TDataAccessorImpl
@@ -67,6 +67,23 @@ namespace UE
 			using TargetPropertyType = IndexOfType<sizeof...(Tx) + 1, T, Tx...>;
 
 			static constexpr size_t ReadPrpertyNum = sizeof...(Tx) + 1;
+
+
+			template<class Pred, class ErrorPred>
+			void ExecuteImpl(Pred& InPred, ErrorPred& InError, TObjectPtr<UObject>* InObject)
+			{
+				// 関数を分割しないと何故かエラーが出る為
+				// しょうがなく分離コンパイルエラーになる理由は分からない
+				if(InObject)
+				{
+					using ObjectType = TPointedToType<TargetPropertyType>;
+					TObjectPtr<UObject>& Object = *InObject;
+					TargetPropertyType Target = Cast<ObjectType>(Object.Get());
+					InPred(Target);
+					// 戻り値が参照の場合にポインタが書き変わっている可能性がある為
+					Object = Target;
+				}
+			}
 
 			template<size_t I, class Pred, class ErrorPred>
 			void ExecuteImpl(Pred& InPred, ErrorPred& InError, void* KeyPtr, UStruct* KeyStruct, void* ValuePtr, UStruct* ValueStruct, std::true_type)
@@ -82,6 +99,10 @@ namespace UE
 					ValueType* Value = static_cast<ValueType*>(ValuePtr);
 
 					InPred(*Key, *Value);
+				}
+				else if constexpr (TIsPointerOrObjectPtrToBaseOf<TargetPropertyType, UObject>::Value)
+				{
+					ExecuteImpl(InPred, InError, static_cast<TObjectPtr<UObject>*>(ValuePtr));
 				}
 				else
 				{
@@ -116,7 +137,7 @@ namespace UE
 				if (Property == nullptr)
 				{
 					// Propertyが見つからないのでエラー
-					if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+					if constexpr (TIsErrorInvokeable<ErrorPred>)
 					{
 						InErrorPred(FString::Printf(TEXT("Struct(%s) Property(%s)が見つかりませんでした。"), *GetNameSafe(ValueStruct), *PropertyName.ToString()));
 					}
@@ -130,7 +151,7 @@ namespace UE
 						UClass* TargetClass = TPointedToType<Type>::StaticClass();
 						if (TargetClass != ObjectProperty->PropertyClass)
 						{
-							if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+							if constexpr (TIsErrorInvokeable<ErrorPred>)
 							{
 								// エラーハンドリング関数が指定されている場合にはコールバックを出す
 								InErrorPred(FString::Printf(TEXT("指定されている[%d]型(%s) != %s"), I, *ObjectProperty->PropertyClass->GetName(), *TargetClass->GetName()));
@@ -142,7 +163,7 @@ namespace UE
 						return;
 					}
 					// Propertyが見つからないのでエラー
-					if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+					if constexpr (TIsErrorInvokeable<ErrorPred>)
 					{
 						InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
 					}
@@ -154,7 +175,7 @@ namespace UE
 						UStruct* TargetStruct = Type::StaticStruct();
 						if (TargetStruct != StructProperty->Struct)
 						{
-							if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+							if constexpr (TIsErrorInvokeable<ErrorPred>)
 							{
 								// エラーハンドリング関数が指定されている場合にはコールバックを出す
 								InErrorPred(FString::Printf(TEXT("指定されている[%d]型(%s) != %s"), I, *StructProperty->Struct->GetName(), *TargetStruct->GetName()));
@@ -165,7 +186,7 @@ namespace UE
 						ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, StructProperty->Struct, NextConditionType());
 					}
 					// Propertyが見つからないのでエラー
-					if constexpr (TDataAccessorErrorInvokeable<ErrorPred>)
+					if constexpr (TIsErrorInvokeable<ErrorPred>)
 					{
 						InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
 					}
@@ -233,7 +254,7 @@ namespace UE
 				ExecuteImpl<0>(InExec, nullptr, nullptr, nullptr, TopParam->DataPtr, TopParam->TopDataClass, std::false_type());
 			}
 
-			template<class ExecPred, class ErrorPred> requires (TDataAccessorInvokeable<ExecPred, TargetPropertyType >::Value&& std::is_invocable_v<ErrorPred, const FString&>)
+			template<class ExecPred, class ErrorPred> requires (TDataAccessorInvokeable<ExecPred, TargetPropertyType >::Value&& TIsErrorInvokeable<ErrorPred>)
 				void Execute(ExecPred InExec, ErrorPred InError)
 			{
 				ExecuteImpl<0>(InExec, InError, nullptr, nullptr, TopParam->DataPtr, TopParam->TopDataClass, std::false_type());
