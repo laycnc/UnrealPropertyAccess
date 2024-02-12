@@ -203,15 +203,60 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 	{
 		bool bFailed = true;
 		FMyTestData TestData = {};
-		TestData.Test1 = NewObject<UTestObject>();
+		UTestObject* TestObject = NewObject<UTestObject>();
+		TestData.Test1 = TestObject;
 
+		// 値が違っているかチェック
 		UE::ReadProperty<TObjectPtr<UTestObject>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
 			.Execute([&](TObjectPtr<UTestObject> PropertyValue)
 				{
 					bFailed = TestData.Test1 != PropertyValue;
 				});
 
-		TestData.Test1->MarkAsGarbage();
+		if (bFailed)
+		{
+			return false;
+		}
+
+		// 値の書き換えをチェック
+		UE::ReadProperty<TObjectPtr<UTestObject>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
+			.Execute([&](TObjectPtr<UTestObject>& PropertyValue)
+				{
+					PropertyValue = nullptr;
+				});
+
+		if ( TestData.Test1 != nullptr)
+		{
+			return false;
+		}
+
+		TestData.Test1 = TestObject;
+
+		// 値が違っているかチェック
+		UE::ReadProperty<UTestObject*>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
+			.Execute([&](UTestObject* PropertyValue)
+				{
+					bFailed = TestData.Test1 != PropertyValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+
+		// 値の書き換えをチェック
+		UE::ReadProperty<UTestObject*>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
+			.Execute([&](UTestObject*& PropertyValue)
+				{
+					PropertyValue = nullptr;
+				});
+
+		if (TestData.Test1 != nullptr)
+		{
+			return false;
+		}
+
+		TestObject->MarkAsGarbage();
 
 		if (bFailed)
 		{
