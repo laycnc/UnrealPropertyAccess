@@ -297,8 +297,24 @@ bool FUnrealPropertyAccessStructHierarchyTest::RunTest(const FString& Parameters
 		const FString TestDataValue = TEXT("###ABC###");
 		bool bFailed = true;
 		UMyObject* TestData = NewObject<UMyObject>();
-		TestData->TestData.Test2 = NewObject<UTest2Object>();
-		TestData->TestData.Test2->StrValue = TEXT("###ABC###");
+		UTest2Object* Test2Data = NewObject<UTest2Object>();
+		TestData->TestData.Test1 = Test2Data;
+		TestData->TestData.Test2 = Test2Data;
+		Test2Data->StrValue = TEXT("###ABC###");
+
+		// TObjectPtr<UTest1Object>だがUTest2Objectが入っている想定のプロパティ
+		UE::ReadProperty<FMyTestData>(TestData, GET_MEMBER_NAME_CHECKED(UMyObject, TestData))
+			.ReadProperty<TObjectPtr<UTest2Object>>(GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
+			.ReadProperty<FString>(GET_MEMBER_NAME_CHECKED(UTest2Object, StrValue))
+			.Execute([&](FString PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
 
 		UE::ReadProperty<FMyTestData>(TestData, GET_MEMBER_NAME_CHECKED(UMyObject, TestData))
 			.ReadProperty<TObjectPtr<UTest2Object>>(GET_MEMBER_NAME_CHECKED(FMyTestData, Test2))

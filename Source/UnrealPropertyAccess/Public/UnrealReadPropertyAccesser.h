@@ -124,7 +124,25 @@ namespace UE
 				{
 					// UObjectの場合には生ポインタまで取得する必要があるので特殊化が必要
 					// TObjectPtrのままだと値を取得する事が出来ない
-					ValuePtr = InValuePtr->Get();
+					if (!IsValid(*InValuePtr))
+					{
+						// 未設定の場合には早期終了
+						return;
+					}
+
+					UObject* ObjectPtr = InValuePtr->Get();
+
+					if (!ObjectPtr->GetClass()->IsChildOf(ValueStruct))
+					{
+						// 念の為取得したObjectのタイプチェックもする
+						return;
+					}
+
+					// 本当はTypeを参照してUClassを上書きする必要がある
+					// todo
+					ValueStruct = ObjectPtr->GetClass();
+
+					ValuePtr = ObjectPtr;
 				}
 
 				const FName& PropertyName = TopParam->PropertyNames[I];
@@ -160,7 +178,7 @@ namespace UE
 					if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
 					{
 						UClass* TargetClass = TPointedToType<Type>::StaticClass();
-						if (TargetClass != ObjectProperty->PropertyClass)
+						if (!TargetClass->IsChildOf(ObjectProperty->PropertyClass))
 						{
 							if constexpr (TIsErrorInvokeable<ErrorPred>)
 							{
