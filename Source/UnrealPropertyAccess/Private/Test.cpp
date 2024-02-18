@@ -207,8 +207,8 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 		FMyTestData TestData = {};
 		TestData.EnumValue1 = static_cast<EEnumTest1::Type>(TestDataValue);
 
-		UE::ReadProperty<EEnumTest1::Type>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue1))
-			.Execute([&](EEnumTest1::Type PropertyValue)
+		UE::ReadProperty<TEnumAsByte<EEnumTest1::Type>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue1))
+			.Execute([&](TEnumAsByte<EEnumTest1::Type> PropertyValue)
 				{
 					bFailed = PropertyValue != TestDataValue;
 				});
@@ -232,6 +232,12 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 				{
 					bFailed = PropertyValue != TestDataValue;
 				});
+
+
+		//using EEnumTest1AsByte = TEnumAsByte< EEnumTest1::Type>;
+		//using FFF1 = std::conditional_t<TIsTEnumAsByte<EEnumTest1AsByte>::Value, EEnumTest1AsByte::EnumType, EEnumTest1AsByte>;
+		//using FFF2 = std::conditional_t<TIsTEnumAsByte<EEnumTest2>::Value, TEnumAsByte<EEnumTest2>::EnumType, EEnumTest2>;
+		//using FFF3 = std::conditional_t<TIsTEnumAsByte<EEnumTest3>::Value, TEnumAsByte<EEnumTest3>::EnumType, EEnumTest2>;
 
 		if (bFailed)
 		{
@@ -285,7 +291,7 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 					PropertyValue = nullptr;
 				});
 
-		if ( TestData.Test1 != nullptr)
+		if (TestData.Test1 != nullptr)
 		{
 			return false;
 		}
@@ -331,7 +337,7 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructHierarchyTest, "PropertyAccess.HierarchyTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FUnrealPropertyAccessStructHierarchyTest::RunTest(const FString& Parameters)
-{	
+{
 	// 階層テスト
 	{
 		bool bFailed = true;
@@ -340,12 +346,12 @@ bool FUnrealPropertyAccessStructHierarchyTest::RunTest(const FString& Parameters
 		TestData->TestData.Inner.Int32Value = TestDataValue;
 
 		UE::ReadProperty<FMyTestData>(TestData, GET_MEMBER_NAME_CHECKED(UMyObject, TestData))
-		.ReadProperty<FMyTestDataInner>(GET_MEMBER_NAME_CHECKED(FMyTestData, Inner))
-		.ReadProperty<int32>(GET_MEMBER_NAME_CHECKED(FMyTestDataInner, Int32Value))
+			.ReadProperty<FMyTestDataInner>(GET_MEMBER_NAME_CHECKED(FMyTestData, Inner))
+			.ReadProperty<int32>(GET_MEMBER_NAME_CHECKED(FMyTestDataInner, Int32Value))
 			.Execute([&](int32 PropertyValue)
-			{
-				bFailed = PropertyValue != TestDataValue;
-			});
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
 
 		if (bFailed)
 		{

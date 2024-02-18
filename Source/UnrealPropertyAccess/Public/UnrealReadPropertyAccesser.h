@@ -220,14 +220,24 @@ namespace UE
 						InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
 					}
 				}
-				else if constexpr (std::is_enum_v<Type>)
+				else if constexpr (std::is_enum_v<Type> || TIsTEnumAsByte<Type>::Value)
 				{
+					UEnum* TargetEnum = nullptr;
+					if constexpr(TIsTEnumAsByte<Type>::Value)
+					{
+						TargetEnum = StaticEnum<typename Type::EnumType>();
+					}
+					else
+					{
+						TargetEnum = StaticEnum<Type>();
+					}
+
 					if (FByteProperty* ByteProperty = CastField<FByteProperty>(Property))
 					{
 						// namespace EEmumType{ enum Type; }; }
 						// enum EEmumType { };
 						// TEnumAsByteを扱う上記のパターンの列挙型
-						if (ByteProperty->Enum != StaticEnum<Type>())
+						if (ByteProperty->Enum != TargetEnum)
 						{
 							if constexpr (TIsErrorInvokeable<ErrorPred>)
 							{
@@ -240,7 +250,7 @@ namespace UE
 					{
 						// enum struct EEmumType : uint8 { };
 						// enum class EEmumType : uint8 { };
-						if (EnumProperty->GetEnum() != StaticEnum<Type>())
+						if (EnumProperty->GetEnum() != TargetEnum)
 						{
 							if constexpr (TIsErrorInvokeable<ErrorPred>)
 							{
@@ -335,7 +345,7 @@ namespace UE
 			void Execute(ExecPred InExec, ErrorPred InError)
 			{
 				ExecuteImpl<0>(InExec, InError, nullptr, nullptr, TopParam->DataPtr, TopParam->TopDataClass, std::false_type());
-		}
+			}
 
 #endif
 
@@ -349,7 +359,7 @@ namespace UE
 
 		protected:
 			TReadPropertyAccesser<T>* TopParam = nullptr;
-	};
+		};
 
 		template<class T>
 		struct TReadPropertyAccesser
@@ -369,7 +379,7 @@ namespace UE
 			TArray<FName> PropertyNames;
 		};
 
-}
+	}
 
 	template<class Ty, class ValueType>
 	ReadPropertyHelper::TReadPropertyAccesser<Ty> ReadProperty(ValueType* InValuePtr, FName InPropertyName)
