@@ -88,8 +88,8 @@ namespace UE
 				}
 			}
 
-			template<size_t I, class Pred, class ErrorPred>
-			void ExecuteImpl(Pred& InPred, ErrorPred& InError, void* KeyPtr, UStruct* KeyStruct, void* ValuePtr, UStruct* ValueStruct, std::true_type)
+			template<size_t I, class Pred, class ErrorPred, class ValueType>
+			void ExecuteImpl(Pred& InPred, ErrorPred& InError, void* KeyPtr, UStruct* KeyStruct, ValueType* ValuePtr, UStruct* ValueStruct, std::true_type)
 			{
 				if constexpr (TIsTMap<TargetPropertyType>::Value)
 				{
@@ -109,7 +109,7 @@ namespace UE
 				}
 				else
 				{
-					TargetPropertyType* Value = static_cast<TargetPropertyType*>(ValuePtr);
+					TargetPropertyType* Value = reinterpret_cast<TargetPropertyType*>(ValuePtr);
 					InPred(*Value);
 				}
 			}
@@ -197,7 +197,7 @@ namespace UE
 						InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
 					}
 				}
-				if constexpr (TIsUnrealStruct<Type>)
+				else if constexpr (TIsUnrealStruct<Type>)
 				{
 					if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 					{
@@ -220,6 +220,39 @@ namespace UE
 						InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
 					}
 				}
+				else if constexpr (std::is_enum_v<Type>)
+				{
+					if (FByteProperty* ByteProperty = CastField<FByteProperty>(Property))
+					{
+						// namespace EEmumType{ enum Type; }; }
+						// enum EEmumType { };
+						// TEnumAsByteを扱う上記のパターンの列挙型
+						if (ByteProperty->Enum != StaticEnum<Type>())
+						{
+							if constexpr (TIsErrorInvokeable<ErrorPred>)
+							{
+								InErrorPred(FString::Printf(TEXT("指定されている列挙型[%d]型が誤っています"), I));
+							}
+							return;
+						}
+					}
+					else if (FEnumProperty* EnumProperty = CastField<FEnumProperty>(Property))
+					{
+						// enum struct EEmumType : uint8 { };
+						// enum class EEmumType : uint8 { };
+						if (EnumProperty->GetEnum() != StaticEnum<Type>())
+						{
+							if constexpr (TIsErrorInvokeable<ErrorPred>)
+							{
+								InErrorPred(FString::Printf(TEXT("指定されている列挙型[%d]型が誤っています"), I));
+							}
+							return;
+						}
+					}
+					uint8* NewValue = Property->ContainerPtrToValuePtr<uint8>(ValuePtr);
+					ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, nullptr, NextConditionType());
+					return;
+				}
 				if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
 				{
 					UStruct* ArrayValueStruct = GetPropertyClass(ArrayProperty->Inner);
@@ -233,7 +266,7 @@ namespace UE
 						ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, ArrayValuePtr, ArrayValueStruct, NextConditionType());
 					}
 				}
-				else if (FSetProperty* SetProperty = CastField<FSetProperty>(Property))
+				if (FSetProperty* SetProperty = CastField<FSetProperty>(Property))
 				{
 					UStruct* SetValueStruct = GetPropertyClass(SetProperty->ElementProp);
 					void* NewValue = SetProperty->ContainerPtrToValuePtr<void>(ValuePtr);
@@ -246,7 +279,7 @@ namespace UE
 						ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, ArrayValuePtr, SetValueStruct, NextConditionType());
 					}
 				}
-				else if (FMapProperty* MapProperty = CastField<FMapProperty>(Property))
+				if (FMapProperty* MapProperty = CastField<FMapProperty>(Property))
 				{
 					UStruct* MapKeyStruct = GetPropertyClass(MapProperty->KeyProp);
 					UStruct* MapValueStruct = GetPropertyClass(MapProperty->ValueProp);
@@ -302,7 +335,7 @@ namespace UE
 			void Execute(ExecPred InExec, ErrorPred InError)
 			{
 				ExecuteImpl<0>(InExec, InError, nullptr, nullptr, TopParam->DataPtr, TopParam->TopDataClass, std::false_type());
-			}
+		}
 
 #endif
 
@@ -316,7 +349,7 @@ namespace UE
 
 		protected:
 			TReadPropertyAccesser<T>* TopParam = nullptr;
-		};
+	};
 
 		template<class T>
 		struct TReadPropertyAccesser
@@ -336,7 +369,7 @@ namespace UE
 			TArray<FName> PropertyNames;
 		};
 
-	}
+}
 
 	template<class Ty, class ValueType>
 	ReadPropertyHelper::TReadPropertyAccesser<Ty> ReadProperty(ValueType* InValuePtr, FName InPropertyName)

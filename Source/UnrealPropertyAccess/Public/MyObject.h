@@ -6,6 +6,35 @@
 #include "UObject/NoExportTypes.h"
 #include "MyObject.generated.h"
 
+UENUM()
+namespace EEnumTest1
+{
+	enum Type
+	{
+		Value1,
+		Value2,
+		Value3,
+	};
+}
+
+
+UENUM()
+enum EEnumTest2
+{
+	EnumTest2_Value1,
+	EnumTest2_Value2,
+	EnumTest2_Value3,
+};
+
+UENUM()
+enum struct EEnumTest3 : uint8
+{
+	Value1,
+	Value2,
+	Value3,
+};
+
+
 UCLASS()
 class UTestObject : public UObject
 {
@@ -95,6 +124,15 @@ public:
 
 	UPROPERTY()
 	uint64 Uint64Value = 0;
+
+	UPROPERTY()
+	TEnumAsByte<EEnumTest1::Type> EnumValue1;
+
+	UPROPERTY()
+	TEnumAsByte<EEnumTest2> EnumValue2;
+
+	UPROPERTY()
+	EEnumTest3 EnumValue3;
 
 	UPROPERTY()
 	TObjectPtr<UTestObject> Test1 = nullptr;

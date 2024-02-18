@@ -199,6 +199,66 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 		}
 	}
 
+	// 列挙型テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const uint8 TestDataValue = RandValue<uint8>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.EnumValue1 = static_cast<EEnumTest1::Type>(TestDataValue);
+
+		UE::ReadProperty<EEnumTest1::Type>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue1))
+			.Execute([&](EEnumTest1::Type PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	// 列挙型テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const EEnumTest2 TestDataValue = RandValue<EEnumTest2>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.EnumValue2 = TestDataValue;
+
+		UE::ReadProperty<EEnumTest2>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue2))
+			.Execute([&](EEnumTest2 PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
+	// 列挙型テスト
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const EEnumTest3 TestDataValue = RandValue<EEnumTest3>();
+		bool bFailed = true;
+		FMyTestData TestData = {};
+		TestData.EnumValue3 = TestDataValue;
+
+		UE::ReadProperty<EEnumTest3>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue3))
+			.Execute([&](EEnumTest3 PropertyValue)
+				{
+					bFailed = PropertyValue != TestDataValue;
+				});
+
+		if (bFailed)
+		{
+			return false;
+		}
+	}
+
 	// Objectテスト
 	{
 		bool bFailed = true;
