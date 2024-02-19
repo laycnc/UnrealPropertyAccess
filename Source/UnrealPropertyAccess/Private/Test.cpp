@@ -1,4 +1,5 @@
-#include "UnrealReadPropertyAccesser.h"
+//#include "UnrealReadPropertyAccesser.h"
+#include "UElReadPropertyAccesser.h"
 #include "MyObject.h"
 
 UE_DISABLE_OPTIMIZATION
@@ -16,12 +17,22 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructPrimitiveTest, "Prop
 
 bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters)
 {
+	UE_LOG(LogTemp, Display, TEXT("========================"));
+	UE_LOG(LogTemp, Display, TEXT("StructPrimitiveTest Test"));
+	UE_LOG(LogTemp, Display, TEXT("========================"));
+
+	const auto OnPropertyErrorHandle = [this](const FString& InError)
+		{
+			AddError(InError);
+		};
+
 	constexpr uint32 TestNum = 10;
+
 	// Booleanテスト
+	UE_LOG(LogTemp, Display, TEXT("Boolean Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const bool TestDataValue = FMath::RandBool();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.BoolValue = TestDataValue;
 		TestData.Inner.Uint64Value = 123454321;
@@ -29,245 +40,180 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 		UE::ReadProperty<bool>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, BoolValue))
 			.Execute([&](bool PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
+					TestEqual(TEXT("Boolean Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 
-		if (bFailed)
-		{
-			return false;
-		}
 	}
 
 	// int8テスト
+	UE_LOG(LogTemp, Display, TEXT("int8 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const int8 TestDataValue = RandValue<int8>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Int8Value = TestDataValue;
 
 		UE::ReadProperty<int8>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int8Value))
 			.Execute([&](int8 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("int8 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// int16テスト
+	UE_LOG(LogTemp, Display, TEXT("int16 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const int16 TestDataValue = RandValue<int16>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Int16Value = TestDataValue;
 
 		UE::ReadProperty<int16>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int16Value))
 			.Execute([&](int16 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("int16 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// int32テスト
+	UE_LOG(LogTemp, Display, TEXT("int32 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const int32 TestDataValue = RandValue<int32>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Int32Value = TestDataValue;
 
 		UE::ReadProperty<int32>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int32Value))
 			.Execute([&](int32 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("int32 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// int64テスト
+	UE_LOG(LogTemp, Display, TEXT("int64 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const int64 TestDataValue = RandValue<int64>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Int64Value = TestDataValue;
 
 		UE::ReadProperty<int64>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Int64Value))
 			.Execute([&](int64 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("int64 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 
 	// uint8テスト
+	UE_LOG(LogTemp, Display, TEXT("uint8 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const uint8 TestDataValue = RandValue<uint8>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Uint8Value = TestDataValue;
 
 		UE::ReadProperty<uint8>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint8Value))
 			.Execute([&](uint8 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("uint8 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// uint16テスト
+	UE_LOG(LogTemp, Display, TEXT("uint16 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const uint16 TestDataValue = RandValue<uint16>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Uint16Value = TestDataValue;
 
 		UE::ReadProperty<uint16>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint16Value))
 			.Execute([&](uint16 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("uint16 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// uint32テスト
+	UE_LOG(LogTemp, Display, TEXT("uint32 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const uint32 TestDataValue = RandValue<uint32>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Uint32Value = TestDataValue;
 
 		UE::ReadProperty<uint32>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint32Value))
 			.Execute([&](uint32 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("uint32 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// uint64テスト
+	UE_LOG(LogTemp, Display, TEXT("uint64 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const uint64 TestDataValue = RandValue<uint64>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.Uint64Value = TestDataValue;
 
 		UE::ReadProperty<uint64>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Uint64Value))
 			.Execute([&](uint64 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("uint64 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// 列挙型テスト
+	UE_LOG(LogTemp, Display, TEXT("TEnumAsByte<EEnumTest1::Type> Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const uint8 TestDataValue = RandValue<uint8>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.EnumValue1 = static_cast<EEnumTest1::Type>(TestDataValue);
 
 		UE::ReadProperty<TEnumAsByte<EEnumTest1::Type>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue1))
 			.Execute([&](TEnumAsByte<EEnumTest1::Type> PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("TEnumAsByte<EEnumTest1::Type> Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// 列挙型テスト
+	UE_LOG(LogTemp, Display, TEXT("EEnumTest2 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const EEnumTest2 TestDataValue = RandValue<EEnumTest2>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.EnumValue2 = TestDataValue;
 
 		UE::ReadProperty<EEnumTest2>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue2))
 			.Execute([&](EEnumTest2 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-
-		//using EEnumTest1AsByte = TEnumAsByte< EEnumTest1::Type>;
-		//using FFF1 = std::conditional_t<TIsTEnumAsByte<EEnumTest1AsByte>::Value, EEnumTest1AsByte::EnumType, EEnumTest1AsByte>;
-		//using FFF2 = std::conditional_t<TIsTEnumAsByte<EEnumTest2>::Value, TEnumAsByte<EEnumTest2>::EnumType, EEnumTest2>;
-		//using FFF3 = std::conditional_t<TIsTEnumAsByte<EEnumTest3>::Value, TEnumAsByte<EEnumTest3>::EnumType, EEnumTest2>;
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("EEnumTest2 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// 列挙型テスト
+	UE_LOG(LogTemp, Display, TEXT("EEnumTest3 Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
 	{
 		const EEnumTest3 TestDataValue = RandValue<EEnumTest3>();
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		TestData.EnumValue3 = TestDataValue;
 
 		UE::ReadProperty<EEnumTest3>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, EnumValue3))
 			.Execute([&](EEnumTest3 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("EEnumTest3 Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
 	// Objectテスト
+	UE_LOG(LogTemp, Display, TEXT("Object Test"));
 	{
-		bool bFailed = true;
 		FMyTestData TestData = {};
 		UTestObject* TestObject = NewObject<UTestObject>();
 		TestData.Test1 = TestObject;
@@ -276,58 +222,37 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 		UE::ReadProperty<TObjectPtr<UTestObject>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
 			.Execute([&](TObjectPtr<UTestObject> PropertyValue)
 				{
-					bFailed = TestData.Test1 != PropertyValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual<TObjectPtr<UObject>>(TEXT("UObject Set Value Test Error"), TestData.Test1, PropertyValue);
+				}, OnPropertyErrorHandle);
 
 		// 値の書き換えをチェック
 		UE::ReadProperty<TObjectPtr<UTestObject>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
 			.Execute([&](TObjectPtr<UTestObject>& PropertyValue)
 				{
 					PropertyValue = nullptr;
-				});
+				}, OnPropertyErrorHandle);
 
-		if (TestData.Test1 != nullptr)
-		{
-			return false;
-		}
+		TestEqual<TObjectPtr<UObject>>(TEXT("UObject Set Value Test Error"), TestData.Test1, nullptr);
 
+		// 値を更新
 		TestData.Test1 = TestObject;
-
-		// 値が違っているかチェック
 		UE::ReadProperty<UTestObject*>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
 			.Execute([&](UTestObject* PropertyValue)
 				{
-					bFailed = TestData.Test1 != PropertyValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					// 値を更新したので一致しているはず
+					TestEqual<TObjectPtr<UObject>>(TEXT("UObject Property Read Comparison Test Error"), TestData.Test1, PropertyValue);
+				}, OnPropertyErrorHandle);
 
 		// 値の書き換えをチェック
 		UE::ReadProperty<UTestObject*>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
 			.Execute([&](UTestObject*& PropertyValue)
 				{
 					PropertyValue = nullptr;
-				});
+				}, OnPropertyErrorHandle);
 
-		if (TestData.Test1 != nullptr)
-		{
-			return false;
-		}
+		TestEqual<TObjectPtr<UObject>>(TEXT("UObject Set Value Test Error"), TestData.Test1, nullptr);
 
 		TestObject->MarkAsGarbage();
-
-		if (bFailed)
-		{
-			return false;
-		}
 	}
 
 	return true;
@@ -338,9 +263,18 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructHierarchyTest, "Prop
 
 bool FUnrealPropertyAccessStructHierarchyTest::RunTest(const FString& Parameters)
 {
+	UE_LOG(LogTemp, Display, TEXT("========================"));
+	UE_LOG(LogTemp, Display, TEXT("Hierarchy Test"));
+	UE_LOG(LogTemp, Display, TEXT("========================"));
+
+	const auto OnPropertyErrorHandle = [this](const FString& InError)
+		{
+			AddError(InError);
+		};
+
 	// 階層テスト
+	UE_LOG(LogTemp, Display, TEXT("UMyObject::TestData.Inner.Int32Value Test"));
 	{
-		bool bFailed = true;
 		UMyObject* TestData = NewObject<UMyObject>();
 		const int32 TestDataValue = RandValue<int32>();
 		TestData->TestData.Inner.Int32Value = TestDataValue;
@@ -350,18 +284,13 @@ bool FUnrealPropertyAccessStructHierarchyTest::RunTest(const FString& Parameters
 			.ReadProperty<int32>(GET_MEMBER_NAME_CHECKED(FMyTestDataInner, Int32Value))
 			.Execute([&](int32 PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("UMyObject::TestData.Inner.Int32Value Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 	}
 
+	UE_LOG(LogTemp, Display, TEXT("UMyObject::TestData.Test1.StrValue Test"));
 	{
 		const FString TestDataValue = TEXT("###ABC###");
-		bool bFailed = true;
 		UMyObject* TestData = NewObject<UMyObject>();
 		UTest2Object* Test2Data = NewObject<UTest2Object>();
 		TestData->TestData.Test1 = Test2Data;
@@ -374,26 +303,17 @@ bool FUnrealPropertyAccessStructHierarchyTest::RunTest(const FString& Parameters
 			.ReadProperty<FString>(GET_MEMBER_NAME_CHECKED(UTest2Object, StrValue))
 			.Execute([&](FString PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
-
-		if (bFailed)
-		{
-			return false;
-		}
+					TestEqual(TEXT("UMyObject::TestData.Test1.StrValue Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 
 		UE::ReadProperty<FMyTestData>(TestData, GET_MEMBER_NAME_CHECKED(UMyObject, TestData))
 			.ReadProperty<TObjectPtr<UTest2Object>>(GET_MEMBER_NAME_CHECKED(FMyTestData, Test2))
 			.ReadProperty<FString>(GET_MEMBER_NAME_CHECKED(UTest2Object, StrValue))
 			.Execute([&](FString PropertyValue)
 				{
-					bFailed = PropertyValue != TestDataValue;
-				});
+					TestEqual(TEXT("UMyObject::TestData.Test2.StrValue Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
 
-		if (bFailed)
-		{
-			return false;
-		}
 	}
 
 	return true;
@@ -404,6 +324,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructErrorTest, "Property
 
 bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)
 {
+	const auto UnreachablePropertyError = [this]<class T>(const T&)
+	{
+		AddError(TEXT("Access to unreachable property was made"));
+	};
+
+
 	// Struct型テスト
 	// 別の型にチェックする
 	{
@@ -411,16 +337,13 @@ bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)
 		FMyTestData TestData = {};
 
 		UE::ReadProperty<FMyTestData>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Inner))
-			.Execute([](const FMyTestData&) {},
+			.Execute(UnreachablePropertyError,
 				[&](const FString& Error)
 				{
 					bFailed = false;
 				});
 
-		if (bFailed)
-		{
-			return false;
-		}
+		TestFalse(TEXT("Property Access Failed"), bFailed);
 	}
 
 	// Object型テスト
@@ -430,16 +353,13 @@ bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)
 		FMyTestData TestData = {};
 
 		UE::ReadProperty<TObjectPtr<AActor>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Test1))
-			.Execute([](const TObjectPtr<AActor>&) {},
+			.Execute(UnreachablePropertyError,
 				[&](const FString& Error)
 				{
 					bFailed = false;
 				});
 
-		if (bFailed)
-		{
-			return false;
-		}
+		TestFalse(TEXT("Property Access Failed"), bFailed);
 	}
 
 	return true;
