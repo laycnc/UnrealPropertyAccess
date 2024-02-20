@@ -9,6 +9,10 @@ namespace
 	template<class T>
 	T RandValue()
 	{
+		if constexpr (std::is_integral_v<T>)
+		{
+			return static_cast<T>(FMath::Rand());
+		}
 		return static_cast<T>(FMath::FRand());
 	}
 }
@@ -434,6 +438,42 @@ bool FUnrealPropertyAccessContainerErrorTest::RunTest(const FString& Parameters)
 		{
 			const FMyTestDataInner& Temp = TestData.Array2[index];
 			TestEqual(TEXT("Array Value Cheak"), TestArray[index], Temp.Int32Value);
+		}
+	}
+
+	// Mapテスト
+	UE_LOG(LogTemp, Display, TEXT("Map Value Test"));
+	{
+		FMyTestData TestData = {};
+
+		for (int32 i = 0; i < 20; ++i)
+		{
+			const int32 Value = RandValue<int32>();
+			TestData.Map1.Add(i, Value);
+		}
+
+		TMap<int32, int32> TestMap;
+
+		UE::ReadProperty<TMap<int32, int32>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Map1))
+			.Execute([&](int32 Key, int32 Value)
+				{
+					TestMap.Add(Key, Value);
+				}, OnPropertyErrorHandle);
+
+		if (!TestEqual(TEXT("MapNum Cheak"), TestMap.Num(), TestData.Map1.Num()))
+		{
+			return false;
+		}
+
+		for (auto& [Key, Value] : TestData.Map1)
+		{
+			if (!TestTrue(TEXT("Map Key Cheak"), TestMap.Contains(Key)))
+			{
+				return false;
+			}
+
+			const int32 TestMapValue = TestMap[Key];
+			TestEqual(TEXT("Map Value Cheak"), Value, TestMapValue);
 		}
 	}
 

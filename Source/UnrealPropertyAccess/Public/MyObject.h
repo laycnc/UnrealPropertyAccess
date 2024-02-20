@@ -147,6 +147,9 @@ public:
 	TArray<FMyTestDataInner> Array2;
 
 	UPROPERTY()
+	TMap<int32, int32> Map1;
+
+	UPROPERTY()
 	FMyTestDataInner Inner;
 
 };
