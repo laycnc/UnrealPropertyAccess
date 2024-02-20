@@ -150,6 +150,9 @@ public:
 	TMap<int32, int32> Map1;
 
 	UPROPERTY()
+	TMap<int32, FMyTestDataInner> Map2;
+
+	UPROPERTY()
 	FMyTestDataInner Inner;
 
 };

@@ -477,6 +477,40 @@ bool FUnrealPropertyAccessContainerErrorTest::RunTest(const FString& Parameters)
 		}
 	}
 
+
+	// Map階層テスト
+	UE_LOG(LogTemp, Display, TEXT("Map Hierarchy Value Test"));
+	{
+		FMyTestData TestData = {};
+
+		for (int32 i = 0; i < 20; ++i)
+		{
+			FMyTestDataInner Inner = {};
+			Inner.Int32Value = RandValue<int32>();
+			TestData.Map2.Add(i, Inner);
+		}
+
+		TArray<int32> TestArray;
+
+		UE::ReadProperty<TMap<int32, FMyTestDataInner>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Map2))
+			.ReadProperty<int32>(GET_MEMBER_NAME_CHECKED(FMyTestDataInner, Int32Value))
+			.Execute([&](int32 PropertyValue)
+				{
+					TestArray.Add(PropertyValue);
+				}, OnPropertyErrorHandle);
+
+		if (!TestEqual(TEXT("MapNum Cheak"), TestArray.Num(), TestData.Map2.Num()))
+		{
+			return false;
+		}
+
+		for (auto& [Key, Value] : TestData.Map2)
+		{
+			const int32 TestValue = TestArray[Key];
+			TestEqual(TEXT("Map Value Cheak"), TestValue, Value.Int32Value);
+		}
+	}
+
 	return true;
 }
 
