@@ -365,4 +365,80 @@ bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessContainerErrorTest, "PropertyAccess.ContainerTest", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FUnrealPropertyAccessContainerErrorTest::RunTest(const FString& Parameters)
+{
+	const auto OnPropertyErrorHandle = [this](const FString& InError)
+		{
+			AddError(InError);
+		};
+
+	// Arrayテスト
+	UE_LOG(LogTemp, Display, TEXT("Array Value Test"));
+	{
+		FMyTestData TestData = {};
+		TestData.Array1.Add(TEXT("ABC"));
+		TestData.Array1.Add(TEXT("def"));
+		TestData.Array1.Add(TEXT("GHI"));
+
+		TArray<FString> TestArray;
+
+		//using Type = UE::ReadPropertyDetails::TReadPropertyInfo<TArray<FString>>;
+
+		UE::ReadProperty<TArray<FString>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Array1))
+			.Execute([&](const FString& PropertyValue)
+				{
+					TestArray.Add(PropertyValue);
+				}, OnPropertyErrorHandle);
+
+		if (!TestEqual(TEXT("ArrayNum Cheak"), TestArray.Num(), TestData.Array1.Num()))
+		{
+			return false;
+		}
+
+		for (int32 index = 0; index < TestArray.Num(); ++index)
+		{
+			TestEqual(TEXT("Array Value Cheak"), TestArray[index], TestData.Array1[index]);
+		}
+	}
+
+	// Arrayテスト
+	UE_LOG(LogTemp, Display, TEXT("Array Hierarchy Value Test"));
+	{
+		FMyTestData TestData = {};
+		FMyTestDataInner Inner = {};
+		Inner.Int32Value = 1234;
+		TestData.Array2.Add(Inner);
+		Inner.Int32Value = 5678;
+		TestData.Array2.Add(Inner);
+		Inner.Int32Value = 9012;
+		TestData.Array2.Add(Inner);
+
+		TArray<int32> TestArray;
+
+		UE::ReadProperty<TArray<FMyTestDataInner>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Array2))
+			.ReadProperty<int32>(GET_MEMBER_NAME_CHECKED(FMyTestDataInner, Int32Value))
+			.Execute([&](const int32& PropertyValue)
+				{
+					TestArray.Add(PropertyValue);
+				}, OnPropertyErrorHandle);
+
+		if (!TestEqual(TEXT("ArrayNum Cheak"), TestArray.Num(), TestData.Array2.Num()))
+		{
+			return false;
+		}
+
+		for (int32 index = 0; index < TestArray.Num(); ++index)
+		{
+			const FMyTestDataInner& Temp = TestData.Array2[index];
+			TestEqual(TEXT("Array Value Cheak"), TestArray[index], Temp.Int32Value);
+		}
+	}
+
+	return true;
+}
+
+
 UE_ENABLE_OPTIMIZATION

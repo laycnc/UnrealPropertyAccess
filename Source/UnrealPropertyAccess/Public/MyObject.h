@@ -141,6 +141,12 @@ public:
 	TObjectPtr<UTest2Object> Test2 = nullptr;
 
 	UPROPERTY()
+	TArray<FString> Array1;
+
+	UPROPERTY()
+	TArray<FMyTestDataInner> Array2;
+
+	UPROPERTY()
 	FMyTestDataInner Inner;
 
 };
