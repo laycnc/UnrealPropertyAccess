@@ -53,6 +53,19 @@ namespace UE
 			static constexpr bool Value = std::is_invocable_v<Pred, T&>;
 		};
 
+
+		template<class Pred, class T>
+		struct TDataAccessorInvokeable<Pred, TArray<T>>
+		{
+			static constexpr bool Value = std::is_invocable_v<Pred, T&>;
+		};
+
+		template<class Pred, class T>
+		struct TDataAccessorInvokeable<Pred, TSet<T>>
+		{
+			static constexpr bool Value = std::is_invocable_v<Pred, T&>;
+		};
+
 		template<class Pred, class KeyType, class ValueType>
 		struct TDataAccessorInvokeable<Pred, TMap<KeyType, ValueType>>
 		{
@@ -73,7 +86,7 @@ namespace UE
 
 		private:
 			template<class Pred, class ErrorPred>
-			void ExecuteImpl(Pred& InPred, ErrorPred& InError, TObjectPtr<UObject>* InObject)
+			void ExecuteUObject(Pred& InPred, ErrorPred& InError, TObjectPtr<UObject>* InObject)
 			{
 				// 関数を分割しないと何故かエラーが出る為
 				// しょうがなく分離コンパイルエラーになる理由は分からない
@@ -91,21 +104,33 @@ namespace UE
 			template<size_t I, class Pred, class ErrorPred, class ValueType>
 			void ExecuteImpl(Pred& InPred, ErrorPred& InError, void* KeyPtr, UStruct* KeyStruct, ValueType* ValuePtr, UStruct* ValueStruct, std::true_type)
 			{
-				if constexpr (TIsTMap<TargetPropertyType>::Value)
+				if constexpr (TIsTArray<TargetPropertyType>::Value)
+				{
+					using ElementType = typename TargetPropertyType::ElementType;
+					ElementType* Value = reinterpret_cast<ElementType*>(ValuePtr);
+					InPred(*Value);
+				}
+				else if constexpr (TIsTSet<TargetPropertyType>::Value)
+				{
+					using ElementType = typename TargetPropertyType::ElementType;
+					ElementType* Value = reinterpret_cast<ElementType*>(ValuePtr);
+					InPred(*Value);
+				}
+				else if constexpr (TIsTMap<TargetPropertyType>::Value)
 				{
 					// Mapだけ特殊化
 					// KeyとValueをコールバックで呼ぶ必要がある
-					using KeyType = typename TargetPropertyType::KeyType;
-					using ValueType = typename TargetPropertyType::ValueType;
+					using MapKeyType = typename TargetPropertyType::KeyType;
+					using MapValueType = typename TargetPropertyType::ValueType;
 
-					KeyType* Key = static_cast<KeyType*>(KeyPtr);
-					ValueType* Value = static_cast<ValueType*>(ValuePtr);
+					MapKeyType* Key = static_cast<MapKeyType*>(KeyPtr);
+					MapValueType* Value = static_cast<MapValueType*>(ValuePtr);
 
 					InPred(*Key, *Value);
 				}
 				else if constexpr (TIsPointerOrObjectPtrToBaseOf<TargetPropertyType, UObject>::Value)
 				{
-					ExecuteImpl(InPred, InError, static_cast<TObjectPtr<UObject>*>(ValuePtr));
+					ExecuteUObject(InPred, InError, static_cast<TObjectPtr<UObject>*>(ValuePtr));
 				}
 				else
 				{
@@ -213,17 +238,19 @@ namespace UE
 						}
 						void* NewValue = Property->ContainerPtrToValuePtr<void>(ValuePtr);
 						ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, StructProperty->Struct, NextConditionType());
+						return;
 					}
 					// Propertyが見つからないのでエラー
 					if constexpr (TIsErrorInvokeable<ErrorPred>)
 					{
 						InErrorPred(FString::Printf(TEXT("指定されている[%d]型がUObject派生のクラスではありません"), I));
 					}
+					return;
 				}
 				else if constexpr (std::is_enum_v<Type> || TIsTEnumAsByte<Type>::Value)
 				{
 					UEnum* TargetEnum = nullptr;
-					if constexpr(TIsTEnumAsByte<Type>::Value)
+					if constexpr (TIsTEnumAsByte<Type>::Value)
 					{
 						TargetEnum = StaticEnum<typename Type::EnumType>();
 					}
@@ -263,7 +290,7 @@ namespace UE
 					ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, NewValue, nullptr, NextConditionType());
 					return;
 				}
-				if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
+				else if (FArrayProperty* ArrayProperty = CastField<FArrayProperty>(Property))
 				{
 					UStruct* ArrayValueStruct = GetPropertyClass(ArrayProperty->Inner);
 					void* NewValue = ArrayProperty->ContainerPtrToValuePtr<void>(ValuePtr);
@@ -275,8 +302,9 @@ namespace UE
 						void* ArrayValuePtr = ArrayHelper.GetRawPtr(Index);
 						ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, ArrayValuePtr, ArrayValueStruct, NextConditionType());
 					}
+					return;
 				}
-				if (FSetProperty* SetProperty = CastField<FSetProperty>(Property))
+				else if (FSetProperty* SetProperty = CastField<FSetProperty>(Property))
 				{
 					UStruct* SetValueStruct = GetPropertyClass(SetProperty->ElementProp);
 					void* NewValue = SetProperty->ContainerPtrToValuePtr<void>(ValuePtr);
@@ -288,8 +316,9 @@ namespace UE
 						void* ArrayValuePtr = SetHelper.GetElementPtr(Index);
 						ExecuteImpl<I + 1>(InPred, InErrorPred, nullptr, nullptr, ArrayValuePtr, SetValueStruct, NextConditionType());
 					}
+					return;
 				}
-				if (FMapProperty* MapProperty = CastField<FMapProperty>(Property))
+				else if (FMapProperty* MapProperty = CastField<FMapProperty>(Property))
 				{
 					UStruct* MapKeyStruct = GetPropertyClass(MapProperty->KeyProp);
 					UStruct* MapValueStruct = GetPropertyClass(MapProperty->ValueProp);
@@ -304,6 +333,7 @@ namespace UE
 						void* MapValuePtr = MapHelper.GetValuePtr(Index);
 						ExecuteImpl<I + 1>(InPred, InErrorPred, MapKeyPtr, MapKeyStruct, MapValuePtr, MapValueStruct, NextConditionType());
 					}
+					return;
 				}
 				else
 				{

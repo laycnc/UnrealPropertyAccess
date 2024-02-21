@@ -1,5 +1,5 @@
-//#include "UnrealReadPropertyAccesser.h"
-#include "UElReadPropertyAccesser.h"
+#include "UnrealReadPropertyAccesser.h"
+//#include "UElReadPropertyAccesser.h"
 #include "MyObject.h"
 
 UE_DISABLE_OPTIMIZATION
