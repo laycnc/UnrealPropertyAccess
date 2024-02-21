@@ -126,6 +126,15 @@ public:
 	uint64 Uint64Value = 0;
 
 	UPROPERTY()
+	FName NameValue;
+
+	UPROPERTY()
+	FString StringValue;
+
+	UPROPERTY()
+	FText TextValue;
+
+	UPROPERTY()
 	TEnumAsByte<EEnumTest1::Type> EnumValue1;
 
 	UPROPERTY()
@@ -151,6 +160,12 @@ public:
 
 	UPROPERTY()
 	TMap<int32, FMyTestDataInner> Map2;
+
+	UPROPERTY()
+	TSet<int32> Set1;
+
+	UPROPERTY()
+	TSet<FVector> Set2;
 
 	UPROPERTY()
 	FMyTestDataInner Inner;

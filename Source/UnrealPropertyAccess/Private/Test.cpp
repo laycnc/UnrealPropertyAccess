@@ -170,6 +170,51 @@ bool FUnrealPropertyAccessStructPrimitiveTest::RunTest(const FString& Parameters
 				}, OnPropertyErrorHandle);
 	}
 
+	// FNameテスト
+	UE_LOG(LogTemp, Display, TEXT("FName Test"));
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const FName TestDataValue = TEXT("HOGEPIYO");
+		FMyTestData TestData = {};
+		TestData.NameValue = TestDataValue;
+
+		UE::ReadProperty<FName>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, NameValue))
+			.Execute([&](FName PropertyValue)
+				{
+					TestEqual(TEXT("FName Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
+	}
+
+	// FStringテスト
+	UE_LOG(LogTemp, Display, TEXT("FString Test"));
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const FString TestDataValue = TEXT("HOGEPIYO");
+		FMyTestData TestData = {};
+		TestData.StringValue = TestDataValue;
+
+		UE::ReadProperty<FString>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, StringValue))
+			.Execute([&](FString PropertyValue)
+				{
+					TestEqual(TEXT("FString Test Error"), TestDataValue, PropertyValue);
+				}, OnPropertyErrorHandle);
+	}
+
+	// FTextテスト
+	UE_LOG(LogTemp, Display, TEXT("FText Test"));
+	for (uint32 i = 0; i < TestNum; ++i)
+	{
+		const FText TestDataValue = FText::FromString(TEXT("HOGEPIYO"));
+		FMyTestData TestData = {};
+		TestData.TextValue = TestDataValue;
+
+		UE::ReadProperty<FText>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, TextValue))
+			.Execute([&](FText PropertyValue)
+				{
+					TestEqual(TEXT("FText Test Error"), TestDataValue.ToString(), PropertyValue.ToString());
+				}, OnPropertyErrorHandle);
+	}
+
 	// 列挙型テスト
 	UE_LOG(LogTemp, Display, TEXT("TEnumAsByte<EEnumTest1::Type> Test"));
 	for (uint32 i = 0; i < TestNum; ++i)
@@ -328,10 +373,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FUnrealPropertyAccessStructErrorTest, "Property
 
 bool FUnrealPropertyAccessStructErrorTest::RunTest(const FString& Parameters)
 {
-	const auto UnreachablePropertyError = [this]<class T>(const T&)
-	{
-		AddError(TEXT("Access to unreachable property was made"));
-	};
+	const auto UnreachablePropertyError = [this](const auto&)
+		{
+			AddError(TEXT("Access to unreachable property was made"));
+		};
 
 
 	// Struct型テスト
@@ -453,7 +498,6 @@ bool FUnrealPropertyAccessContainerErrorTest::RunTest(const FString& Parameters)
 		}
 
 		TMap<int32, int32> TestMap;
-
 		UE::ReadProperty<TMap<int32, int32>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Map1))
 			.Execute([&](int32 Key, int32 Value)
 				{
@@ -476,7 +520,6 @@ bool FUnrealPropertyAccessContainerErrorTest::RunTest(const FString& Parameters)
 			TestEqual(TEXT("Map Value Cheak"), Value, TestMapValue);
 		}
 	}
-
 
 	// Map階層テスト
 	UE_LOG(LogTemp, Display, TEXT("Map Hierarchy Value Test"));
@@ -509,6 +552,49 @@ bool FUnrealPropertyAccessContainerErrorTest::RunTest(const FString& Parameters)
 			const int32 TestValue = TestArray[Key];
 			TestEqual(TEXT("Map Value Cheak"), TestValue, Value.Int32Value);
 		}
+	}
+
+	// TSetテスト
+	UE_LOG(LogTemp, Display, TEXT("Set Value Test"));
+	{
+		FMyTestData TestData = {};
+		for (int32 i = 0; i < 20; ++i)
+		{
+			TestData.Set1.Add(RandValue<int32>());
+		}
+
+		TSet<int32> TestArray;
+		UE::ReadProperty<TSet<int32>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Set1))
+			.Execute([&](int32 PropertyValue)
+				{
+					TestArray.Add(PropertyValue);
+				}, OnPropertyErrorHandle);
+
+		auto SetDiff = TestData.Set1.Difference(TestArray);
+		TestTrue(TEXT("Set Difference Cheak"), SetDiff.IsEmpty());
+	}
+
+	// TSetテスト
+	UE_LOG(LogTemp, Display, TEXT("Set Hierarchy Value Test"));
+	{
+		FMyTestData TestData = {};
+		for (int32 i = 0; i < 20; ++i)
+		{
+			FVector Value = { RandValue<double>() , 0  , 0 };
+			TestData.Set2.Add(Value);
+		}
+
+		TSet<FVector> TestSet;
+		UE::ReadProperty<TSet<FVector>>(&TestData, GET_MEMBER_NAME_CHECKED(FMyTestData, Set2))
+			.ReadProperty<double>(GET_MEMBER_NAME_CHECKED(FVector, X))
+			.Execute([&](double PropertyValue)
+				{
+					FVector Value = { PropertyValue, 0  , 0 };
+					TestSet.Add(Value);
+				}, OnPropertyErrorHandle);
+
+		auto SetDiff = TestData.Set2.Difference(TestSet);
+		TestTrue(TEXT("Set Hierarchy Difference Cheak"), SetDiff.IsEmpty());
 	}
 
 	return true;
